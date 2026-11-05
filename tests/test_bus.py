@@ -1,3 +1,4 @@
+import pytest
 from backend.memory.bus import Bus
 
 def test_memory_init_values():
@@ -30,3 +31,11 @@ def test_memory_overflow_Masking():
     value = bus.read(0x0239)
     assert value == 4
 
+    bus.write(0x0244, 0x30005)
+    value = bus.read(0x0244)
+    assert value == 5
+
+def test_requesting_negative_addr():
+    bus = Bus()
+    with pytest.raises(IndexError):
+        bus.read(-1)
