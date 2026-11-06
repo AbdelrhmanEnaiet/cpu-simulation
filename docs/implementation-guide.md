@@ -122,17 +122,35 @@ Step 8  Phase 1 complete
 
 **Next:** go to 2.6.
 
-### 2.6 Screen
+### 2.6a Screen words (Bus)
+
+The bus only hands out the raw screen words. It does not know about pixels.
 
 1. Write tests for these rules:
-   - `screen_pixels()` gives 32 rows of 64 values.
-   - A write of `0x8000` to `0xD000` turns on pixel (0, 0) only.
-   - Pixel (37, 5) is word `0xD016`, bit 10.
-   - A write of `0xFFFF` to all words from `0xD000` to `0xD07F` turns on all 2,048 pixels.
-2. Make `screen_pixels()`. Read the screen words from memory. Use the pixel formula in spec section 4.2.
+   - `screen_pixels()` gives 128 words.
+   - Index 0 is the word at `0xD000`, and index 127 is the word at `0xD07F`.
+   - The word at `0xD080` is not included.
+   - Changing the returned list does not change memory (it is a copy).
+2. Make `screen_pixels()`. Return the words from `0xD000` to `0xD07F`.
 3. Run the tests.
 
 **Result:** acceptance criterion A3 passes.
+
+**Next:** go to 2.6b.
+
+### 2.6b Display
+
+The Display turns the 128 words into pixels, like a video chip.
+
+1. Write tests for these rules:
+   - `0x8000` in word 0 turns on pixel (0, 0) only.
+   - Pixel (37, 5) is word `0xD016`, bit 10.
+   - All 128 words set to `0xFFFF` turn on all 2,048 pixels.
+   - The result has 32 rows of 64 values.
+2. Make a `Display` class (for example in `backend/devices/display.py`). Its `pixels(words)` method returns 32 rows × 64 bools. Use the pixel formula in spec section 4.2.
+3. Run the tests.
+
+**Result:** acceptance criterion A10 passes.
 
 **Next:** ask Claude to review Step 2. Then go to Step 3.
 
