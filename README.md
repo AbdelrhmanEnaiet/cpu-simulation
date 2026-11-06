@@ -38,13 +38,21 @@ cpu-simulation/
 - Flags: `Z` (zero), `C` (carry), `N` (negative)
 - Any register can hold an address: `LD R0, [R1]`
 - Instructions are 1 or 2 words: opcode + registers, then an optional constant/address
+- Stack starts at `SP = 0xC000` and grows down
 - Memory map:
 
-| Range | Use |
-|---|---|
-| `0x0000–0xBFFF` | RAM: program, data, stack |
-| `0xC000–0xC0FF` | I/O: keyboard, timer, random |
-| `0xD000–0xD07F` | Screen: 64×32 mono, 16 pixels per word |
+| Range | Use | Read | Write |
+|---|---|---|---|
+| `0x0000–0xBFFF` | RAM: program, data, stack | value | stores |
+| `0xC000` | Keys: bit 0 up, 1 down, 2 left, 3 right, 4 action | key bits | ignored |
+| `0xC001` | Frame counter (wraps at 65535) | count | ignored |
+| `0xC002` | Random: new value each read | random | reseeds |
+| `0xC003–0xC0FF` | Reserved | 0 | ignored |
+| `0xC100–0xCFFF` | Unused RAM | value | stores |
+| `0xD000–0xD07F` | Screen: 64×32 mono, 16 pixels per word | value | stores |
+| `0xD080–0xFFFF` | Unused RAM | value | stores |
+
+Pixel `(x, y)` is in word `0xD000 + y*4 + x//16`, bit `15 - x%16` (the most significant bit is the leftmost pixel).
 
 ## Install
 
@@ -86,15 +94,41 @@ Start the virtual environment (step 3) each time you open a new terminal.
 
 The simulator itself uses only the Python standard library.
 
-## Current Focus
+## Run the tests
 
-Phase 1: the CPU core, the assembler and a terminal runner.
+With the virtual environment active:
 
-- Spec: [docs/specs/cpu-core.md](docs/specs/cpu-core.md)
-- Step-by-step guide: [docs/implementation-guide.md](docs/implementation-guide.md)
+```cmd
+python -m pytest
+```
 
-Phase 2 (server + React frontend) and phase 3 (the game) come later.
+All tests must pass before moving to the next milestone.
+
+## Docs
+
+| Doc | What it holds |
+|---|---|
+| [docs/specs/cpu-core.md](docs/specs/cpu-core.md) | The phase 1 contract: machine, memory map, instructions, API, acceptance criteria |
+| [docs/architecture.md](docs/architecture.md) | How the parts fit together, data flow, status, risks |
+| [docs/adr/](docs/adr/0000-index.md) | Architecture decision records: why each choice was made |
+| [docs/implementation-guide.md](docs/implementation-guide.md) | Step-by-step build order with the tests to write |
+
+## Roadmap
+
+| Milestone | What | Status |
+|---|---|---|
+| M1 | Bus and devices: memory map, keys, frame counter, random, screen words, Display | ✅ done (tag `M1-complete`) |
+| M2 | CPU skeleton: 4-phase `step()`, moves, loads/stores, `JMP`, errors, **speed benchmark** | next |
+| M3 | Math and bit instructions, flags | planned |
+| M4 | Jumps, calls and stack | planned |
+| M5 | Assembler and disassembler | planned |
+| M6 | Terminal runner and example programs | planned |
+| Phase 2 | FastAPI WebSocket server + React frontend | later |
+| Phase 3 | The game (snake/breakout style) | later |
 
 ## Status
 
-Design done for phase 1. No code yet.
+**M1 complete.** The Bus, devices and Display are built and 22 tests pass.
+
+Next: M2, starting with guide step 3.1 (CPU state).
+Known gap: `Bus.tick_frame()` is in the spec but not built yet. It's needed by M6.

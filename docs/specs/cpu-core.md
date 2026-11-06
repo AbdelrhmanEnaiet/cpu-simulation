@@ -59,7 +59,7 @@ The user (learning, building by hand) gets a working CPU simulator, an assembler
 | `0x0000–0xBFFF` | RAM: program, data, stack | value | stores |
 | `0xC000` | Keys. Bit 0 = up, 1 = down, 2 = left, 3 = right, 4 = action. | key bits | ignored |
 | `0xC001` | Frame counter. The host calls `tick_frame()`, which adds 1 and wraps at 65535. | count | ignored |
-| `0xC002` | Random number: a new value 0–65535 on every read. The seed can be set, for tests. | random | ignored |
+| `0xC002` | Random number: a new value 0–65535 on every read. Writing a value reseeds the generator with it, so the same seed always gives the same sequence. | random | reseeds |
 | `0xC003–0xC0FF` | Reserved | 0 | ignored |
 | `0xC100–0xCFFF` | Unused RAM | value | stores |
 | `0xD000–0xD07F` | Screen: 64×32, 1 bit per pixel | value | stores (draws pixels) |
@@ -122,7 +122,8 @@ The user (learning, building by hand) gets a working CPU simulator, an assembler
 - `CPU.run(max_steps) -> int`, which runs until halted, error, or `max_steps`, and returns the number of steps run.
 - `CPU.snapshot() -> dict`, containing `R0`–`R3`, `PC`, `SP`, `Z`, `C`, `N`, `status`, `error`.
 - `Bus.read(addr)` / `Bus.write(addr, value)`: the memory and device routing. The CPU only talks to the bus.
-- `Bus.screen_pixels() -> 32 rows × 64 bools`, `Bus.set_keys(bits)`, `Bus.tick_frame()`.
+- `Bus.screen_pixels() -> list of 128 words (0xD000–0xD07F)`, `Bus.set_keys(bits)`, `Bus.tick_frame()`. The bus does not decode pixels.
+- `Display.pixels(words) -> 32 rows × 64 bools`. It decodes the screen words with the pixel formula in §4.2, like a video chip.
 - `assemble(text) -> (words, line_map)`. It raises `AsmError(line, message)` at the first error.
 - `disassemble(words, addr) -> (text, length)`.
 
@@ -157,13 +158,14 @@ The user (learning, building by hand) gets a working CPU simulator, an assembler
 |---|---|---|---|---|
 | A1 | Every instruction does exactly what §4.3 says | pytest: at least 1 test per opcode, plus edge cases for each flag (wrap, borrow, shifted-out bit, zero) | all 28 pass | [known] |
 | A2 | Errors stop the CPU cleanly | tests: unknown opcode, bad register, `POP`/`RET` on empty stack → status `error` with a message; `step()` afterwards changes nothing | pass | [known] |
-| A3 | Memory map is correct | tests: I/O writes ignored; random changes between reads (seeded); frame counter wraps; pixel (37,5) → word `0xD016`, bit 10 | pass | [known] |
+| A3 | Memory map is correct | tests: I/O writes ignored; random changes between reads (seeded); frame counter wraps; `screen_pixels()` returns the 128 screen words | pass | [known] |
 | A4 | Assembler output is correct | tests: each instruction form → expected words; labels before and after use; `.equ`; `.word`; hex, binary, decimal | pass | [known] |
 | A5 | Assembler errors are helpful | tests: each error type → `AsmError` with the right line number | pass | [known] |
 | A6 | Disassembly round-trips | for each instruction form: `disassemble(assemble(x))` gives the same instruction | pass | [known] |
 | A7 | Example programs work | `add.asm` (R0 = 8), `sum.asm` (1..10 → 55), `call.asm` (CALL/RET with PUSH/POP keeps registers), `pixel.asm` (pixel (37,5) on), `fill.asm` (all 2,048 pixels on) | each halts with the expected state | [known] |
 | A8 | Fast enough for a game | benchmark: a 1M-instruction loop | ≥ 100k instructions/s on the user's PC | [estimate] |
 | A9 | Phases are recorded | test: a `StepRecord` has 4 phase entries, plus the correct changed registers and written addresses | pass | [known] |
+| A10 | Display decodes the screen | tests: `0x8000` in word 0 → only pixel (0,0) on; pixel (37,5) → word `0xD016`, bit 10; all words `0xFFFF` → all 2,048 pixels on | pass | [known] |
 
 ## 6. Baseline
 
@@ -208,7 +210,7 @@ tests/        pytest
 
 ## 10. Milestones
 
-- **M1: Bus and devices.** Memory map tests pass (A3). This builds the base everything uses.
+- **M1: Bus and devices.** Memory map tests pass (A3) and the Display decodes the screen (A10). This builds the base everything uses.
 - **M2: CPU skeleton.** `step()` with 4 phases, `NOP`, `HLT`, `LDI`, `MOV`, `LD`/`ST` (both forms), `JMP`, plus error handling (A2, A9). **Run the speed benchmark here (A8).** This settles the biggest risk early.
 - **M3: Math and bits.** All flag tests pass (A1 for 1x and 2x).
 - **M4: Jumps, calls and stack.** The rest of A1.
