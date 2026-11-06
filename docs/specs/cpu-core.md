@@ -59,7 +59,7 @@ The user (learning, building by hand) gets a working CPU simulator, an assembler
 | `0x0000–0xBFFF` | RAM: program, data, stack | value | stores |
 | `0xC000` | Keys. Bit 0 = up, 1 = down, 2 = left, 3 = right, 4 = action. | key bits | ignored |
 | `0xC001` | Frame counter. The host calls `tick_frame()`, which adds 1 and wraps at 65535. | count | ignored |
-| `0xC002` | Random number: a new value 0–65535 on every read. The seed can be set, for tests. | random | ignored |
+| `0xC002` | Random number: a new value 0–65535 on every read. Writing a value reseeds the generator with it, so the same seed always gives the same sequence. | random | reseeds |
 | `0xC003–0xC0FF` | Reserved | 0 | ignored |
 | `0xC100–0xCFFF` | Unused RAM | value | stores |
 | `0xD000–0xD07F` | Screen: 64×32, 1 bit per pixel | value | stores (draws pixels) |

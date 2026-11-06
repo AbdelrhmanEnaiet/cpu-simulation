@@ -1,11 +1,21 @@
 import pytest
 from backend.memory.bus import Bus
-
-def test_memory_init_values():
-    bus = Bus()
-    for i in range(0, 65536):
+import random
+def test_memory_init_values_of_zero():
+    bus = Bus(seed=0)
+    for i in range(0, 0xC002):
         register_value = bus.read(i)
         assert register_value == 0
+    for i in range(0xC003, 65536):
+        register_value = bus.read(i)
+        assert register_value == 0
+        
+def test_device_and_screen_init_values_of_non_zero():
+    first_bus = Bus(seed=5)
+    first_register_value = first_bus.read(0xC002)
+    second_bus = Bus(seed=5)
+    second_register_value = second_bus.read(0xC002)
+    assert first_register_value == second_register_value
 
 def test_memory_writing_can_be_recalled():
     bus = Bus()
@@ -37,5 +47,36 @@ def test_memory_overflow_Masking():
 
 def test_requesting_negative_addr():
     bus = Bus()
-    with pytest.raises(IndexError):
-        bus.read(-1)
+    ls = [-1, 0x10000]
+    for i in ls:
+        with pytest.raises(IndexError):
+            bus.read(i)
+        with pytest.raises(IndexError):
+            bus.write(i, 9)
+
+
+def test_reserved_memory_no_write():
+    bus = Bus(seed=5)
+    bus.write(0xC007, 19)
+    value = bus.read(0xC007)
+    assert value==0
+
+def test_write_device_and_frame_counter():
+    bus = Bus()
+    bus.write(0xC000, 5)
+    bus.write(0xC001, 5)
+    value_1 = bus.read(0xC000)
+    value_2 = bus.read(0xC001)
+
+    assert value_1 == 0
+    assert value_2 == 0
+def test_write_random_state():
+    bus = Bus(seed=19476)
+    value_1 = bus.read(0xC002)
+    bus.write(0xC002, 5)
+    value_2 = bus.read(0xC002)
+    bus.write(0xC002, 19476)
+    value_3 = bus.read(0xC002)
+
+    assert value_1 != value_2
+    assert value_1 == value_3
