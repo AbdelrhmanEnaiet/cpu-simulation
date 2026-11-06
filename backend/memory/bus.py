@@ -1,5 +1,4 @@
-import sys
-sys.path.append("./")
+
 from backend.devices.device import Keys, FrameCounter, Random
 
 
