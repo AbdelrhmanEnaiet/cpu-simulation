@@ -1,21 +1,22 @@
 import pytest
 from backend.memory.bus import Bus
-import random
+
 def test_memory_init_values_of_zero():
     bus = Bus(seed=0)
-    for i in range(0, 0xC002):
+    for i in range(0, 0xC002): #this addr hold the random number generated with every read
         register_value = bus.read(i)
         assert register_value == 0
     for i in range(0xC003, 65536):
         register_value = bus.read(i)
         assert register_value == 0
         
-def test_device_and_screen_init_values_of_non_zero():
+def test_seed_determinisim():
     first_bus = Bus(seed=5)
-    first_register_value = first_bus.read(0xC002)
+    first_register_values = [first_bus.read(0xC002) for i in range(5)]
+    
     second_bus = Bus(seed=5)
-    second_register_value = second_bus.read(0xC002)
-    assert first_register_value == second_register_value
+    second_register_values = [second_bus.read(0xC002) for i in range(5)]
+    assert first_register_values == second_register_values
 
 def test_memory_writing_can_be_recalled():
     bus = Bus()
@@ -45,7 +46,7 @@ def test_memory_overflow_Masking():
     value = bus.read(0x0244)
     assert value == 5
 
-def test_requesting_negative_addr():
+def test_requesting_negative_and_outbound_addr():
     bus = Bus()
     ls = [-1, 0x10000]
     for i in ls:
@@ -57,9 +58,19 @@ def test_requesting_negative_addr():
 
 def test_reserved_memory_no_write():
     bus = Bus(seed=5)
-    bus.write(0xC007, 19)
-    value = bus.read(0xC007)
-    assert value==0
+    addrs_to_check = [0xC003, 0xC007, 0xC0FF]
+    for addr in addrs_to_check:
+        bus.write(addr, 19)
+        value = bus.read(addr)
+        assert value==0
+    bus.write(0xC100, 19)
+    assert bus.read(0xC100)== 19
+
+def test_keys_update_through_handler():
+    bus = Bus()
+    bus.set_keys(5)
+    value_1 = bus.read(0xC000)
+    assert value_1 == 5
 
 def test_write_device_and_frame_counter():
     bus = Bus()
@@ -95,3 +106,10 @@ def test_screen_pixels_order_update():
     screen_pixels = bus.screen_pixels()
     assert screen_pixels[0]==5
     assert screen_pixels[127]==10
+
+def test_screen_pixels_size_complience():
+    bus = Bus()
+    bus.write(0xD080 , 5)
+    screen_pixels = bus.screen_pixels()
+    for i in screen_pixels:
+        assert i==0

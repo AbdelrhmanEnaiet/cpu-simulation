@@ -43,3 +43,5 @@ class Bus:
 
     def screen_pixels(self) -> list:
         return self.memory[self.SCREEN_PIXEL_START: self.SCREEN_PIXEL_END]
+    def set_keys(self, value):
+        self.keys.set_keys(value)
