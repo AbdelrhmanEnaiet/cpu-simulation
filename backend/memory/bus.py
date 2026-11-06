@@ -1,3 +1,5 @@
+import sys
+sys.path.append("./")
 from backend.devices.device import Keys, FrameCounter, Random
 
 
@@ -39,3 +41,5 @@ class Bus:
         if self._check_addr_access(addr):
             self.memory[addr]=value
 
+    def screen_pixels(self) -> list:
+        return self.memory[0xD000:0xD07F+1]
