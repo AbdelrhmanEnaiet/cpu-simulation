@@ -6,7 +6,8 @@ from backend.devices.device import Keys, FrameCounter, Random
 class Bus:
     MAX_WORD_IN_MEMORY = 0xFFFF
     MEMORY_SIZE = 65536 
-
+    SCREEN_PIXEL_START = 0xD000
+    SCREEN_PIXEL_END = 0xD07F+1
     def __init__(self, seed=None):
         self.memory = [0] * self.MEMORY_SIZE 
         self.keys = Keys()
@@ -42,4 +43,4 @@ class Bus:
             self.memory[addr]=value
 
     def screen_pixels(self) -> list:
-        return self.memory[0xD000:0xD07F+1]
+        return self.memory[self.SCREEN_PIXEL_START: self.SCREEN_PIXEL_END]

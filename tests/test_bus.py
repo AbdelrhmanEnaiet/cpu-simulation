@@ -70,6 +70,7 @@ def test_write_device_and_frame_counter():
 
     assert value_1 == 0
     assert value_2 == 0
+
 def test_write_random_state():
     bus = Bus(seed=19476)
     value_1 = bus.read(0xC002)
@@ -80,3 +81,17 @@ def test_write_random_state():
 
     assert value_1 != value_2
     assert value_1 == value_3
+
+
+def test_screen_pixels_length():
+    bus = Bus()
+    screen_pixels = bus.screen_pixels()
+    assert len(screen_pixels) == 128
+
+def test_screen_pixels_order_update():
+    bus = Bus()
+    bus.write(0xD000, 5)
+    bus.write(0xD07F, 10)
+    screen_pixels = bus.screen_pixels()
+    assert screen_pixels[0]==5
+    assert screen_pixels[127]==10
