@@ -7,7 +7,9 @@ class Bus:
     MEMORY_SIZE = 65536 
     SCREEN_PIXEL_START = 0xD000
     SCREEN_PIXEL_END = 0xD07F+1
+
     def __init__(self, seed=None):
+        self.seed = seed
         self.memory = [0] * self.MEMORY_SIZE 
         self.keys = Keys()
         self.frame_counter = FrameCounter()
@@ -45,3 +47,9 @@ class Bus:
         return self.memory[self.SCREEN_PIXEL_START: self.SCREEN_PIXEL_END]
     def set_keys(self, value):
         self.keys.set_keys(value)
+
+    def flush(self) -> None:
+        self.memory = [0] * self.MEMORY_SIZE 
+        self.keys = Keys()
+        self.frame_counter = FrameCounter()
+        self.rng = Random(self.seed)

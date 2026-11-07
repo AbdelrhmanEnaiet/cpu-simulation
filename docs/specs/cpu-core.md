@@ -1,4 +1,4 @@
-# CPU Core (Phase 1) — Spec v0.1
+# CPU Core (Phase 1) — Spec v0.2
 
 **Summary**
 - **Goal:** a custom 16-bit CPU in Python, with an assembler and a terminal runner, tested well enough to build a game on later.
@@ -49,7 +49,7 @@ The user (learning, building by hand) gets a working CPU simulator, an assembler
 | Registers | `R0`–`R3` (general), `PC`, `SP`. All 16-bit. |
 | Flags | `Z` = result is 0. `N` = bit 15 of the result is 1. `C` = defined per instruction (§4.3). |
 | Memory | 65,536 words. Every address is valid. All words are 0 at reset. |
-| Reset | All registers 0, `PC` = 0, `SP` = `0xC000` (empty stack), flags off, memory cleared, program loaded starting at address 0. |
+| Reset | All registers 0, `PC` = 0, `SP` = `0xC000` (empty stack), flags off, error cleared, memory and devices cleared through `Bus.flush()` (§4.4). `load(words)` then puts the program at address 0. |
 | Status | `running` / `halted` / `error`. When the status is `halted` or `error`, `step()` does nothing. |
 
 ### 4.2 Memory map
@@ -123,6 +123,7 @@ The user (learning, building by hand) gets a working CPU simulator, an assembler
 - `CPU.snapshot() -> dict`, containing `R0`–`R3`, `PC`, `SP`, `Z`, `C`, `N`, `status`, `error`.
 - `Bus.read(addr)` / `Bus.write(addr, value)`: the memory and device routing. The CPU only talks to the bus.
 - `Bus.screen_pixels() -> list of 128 words (0xD000–0xD07F)`, `Bus.set_keys(bits)`, `Bus.tick_frame()`. The bus does not decode pixels.
+- `Bus.flush()`: sets every RAM word (screen included) to 0, keys to 0 and the frame counter to 0, and restarts Random from the seed the Bus was made with, which undoes any reseed the program made by writing `0xC002`. `CPU.reset()` calls it. The CPU never clears memory by writing addresses one by one, because a write to `0xC002` reseeds Random.
 - `Display.pixels(words) -> 32 rows × 64 bools`. It decodes the screen words with the pixel formula in §4.2, like a video chip.
 - `assemble(text) -> (words, line_map)`. It raises `AsmError(line, message)` at the first error.
 - `disassemble(words, addr) -> (text, length)`.
@@ -231,3 +232,4 @@ tests/        pytest
 ## Change log
 
 - v0.1 2026-11-05: initial
+- v0.2 2026-11-07: added `Bus.flush()` (§4.4). Reset (§4.1) clears memory and devices through it and clears `error`. Removed "program loaded" from reset, because `load()` does that.

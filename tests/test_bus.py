@@ -113,3 +113,42 @@ def test_screen_pixels_size_complience():
     screen_pixels = bus.screen_pixels()
     for i in screen_pixels:
         assert i==0
+
+
+def test_flush_clears_ram_and_screen():
+    bus = Bus()
+    addrs = [0x0000, 0x0234, 0xBFFF, 0xC100, 0xD000, 0xD07F, 0xFFFF]
+    for addr in addrs:
+        bus.write(addr, 7)
+    bus.flush()
+    for addr in addrs:
+        assert bus.read(addr) == 0
+    assert bus.screen_pixels() == [0] * 128
+
+def test_flush_clears_keys():
+    bus = Bus()
+    bus.set_keys(5)
+    bus.flush()
+    assert bus.read(0xC000) == 0
+
+def test_flush_resets_frame_counter():
+    bus = Bus()
+    bus.frame_counter.tick_frame()
+    bus.frame_counter.tick_frame()
+    bus.flush()
+    assert bus.read(0xC001) == 0
+
+def test_flush_restarts_random_from_seed():
+    bus = Bus(seed=42)
+    first_run = [bus.read(0xC002) for _ in range(5)]
+    bus.flush()
+    second_run = [bus.read(0xC002) for _ in range(5)]
+    assert first_run == second_run
+
+def test_flush_undoes_program_reseed():
+    bus = Bus(seed=42)
+    expected = [bus.read(0xC002) for _ in range(5)]
+    bus.write(0xC002, 999)
+    bus.flush()
+    after_flush = [bus.read(0xC002) for _ in range(5)]
+    assert after_flush == expected
